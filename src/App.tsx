@@ -1,49 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { MdRefresh } from "react-icons/md";
-
-import * as footballApi from '../src/services/football';
-
 import { Home } from './pages/Home/Home';
 import { InputText } from './components/InputText/InputText';
-import { useContext } from 'react';
 import { ThemeContext } from './contexts/ThemeContext';
 import { GridContext } from './contexts/GridContext';
 import { MatchDetails } from './pages/MatchDetails/MatchDetails';
 import { Streams } from './pages/Live/Streams';
-
-import { Link } from 'react-router-dom'
+import io from 'socket.io-client';
+import { Link } from 'react-router-dom';
 import { StreamsContext } from './contexts/StreamsContext';
 
 export interface ChangeEventProps {
   event: React.ChangeEvent<HTMLInputElement>;
-  value: string
+  value: string;
 }
 
 const App = () => {
-  const [matches, setMatches] = useState<[]>([]);
+  const [matches, setMatches] = useState([]);
+  const [isReloaded, setIsReloaded] = useState(false);
   const { theme, handleChangeTheme, darkIconTheme, lightIconTheme } = useContext(ThemeContext);
   const { focusMode, grid, gridMode, handleChangeGridLayout } = useContext(GridContext);
   const [refreshList, setRefreshList] = useState([]);
   const [text, setText] = useState('');
-
   const { upcomingMatches } = useContext(StreamsContext) || { upcomingMatches: [] };
-
   const location = useLocation();
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    footballApi.getLiveMatches()
-      .then(data => setMatches(data)).catch((error) => console.log('error', error))
-  }, [refreshList]);
+    const socket = io('http://localhost:5173'); // Ensure this matches your server's port
+
+    socket.on('connect', () => {
+      console.log('Connected to server');
+    });
+
+    socket.on('live-matches', (data) => {
+      console.log('Received live matches data:', data); // Debugging log
+      setMatches(data);
+      setIsReloaded(true);
+      setLoading(false);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isReloaded]);
+
+  useEffect(() => {
+    if (isReloaded) {
+      console.log('Matches list has been re-loaded');
+      setIsReloaded(false);  // Reset isReloaded after processing
+    }
+  }, [isReloaded]);
 
   const handleRefreshList = () => {
     console.log('refresh');
-    setRefreshList(matches);
+    setRefreshList(matches); // This will force a re-render
   }
 
   const handleChangeText = (event: React.ChangeEvent<HTMLInputElement>) => {
     setText(event.target.value);
   }
+
+  console.log('matches', matches)
 
   return (
     <div className={`${theme === 'light' ? 'bg-slate-600' : 'bg-slate-300'} flex flex-col w-full min-h-screen`}>
@@ -71,13 +94,13 @@ const App = () => {
         </div>
       </header>
 
-      <body className='flex justify-center'>
+      <main className='flex justify-center'>
         <Routes>
-          <Route path='/' element={<Home query={text} />} />
+          <Route path='/' element={<Home query={text} matches={matches} />} />
           <Route path='/match-details/:matchId' Component={MatchDetails} />
           <Route path='/live' Component={Streams} />
         </Routes>
-      </body>
+      </main>
     </div>
   );
 };

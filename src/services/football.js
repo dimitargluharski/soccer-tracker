@@ -1,5 +1,4 @@
-const KEY = 'cc75ed977b6ff2922bde04c86f092d58'; // not good practice to show the key, move it in .env file later
-const API_HOST = 'v3.football.api-sports.io';
+
 
 // export const getLiveMatches = async () => {
 //     const res = await fetch(`https://v3.football.api-sports.io/fixtures?live=all`, {
@@ -118,8 +117,8 @@ export const getLiveMatches = async () => {
   const options = {
     method: 'GET',
     headers: {
-      'X-RapidAPI-Key': KEY,
-      'X-RapidAPI-Host': API_HOST
+      'X-RapidAPI-Key': 'cc75ed977b6ff2922bde04c86f092d58',
+      'X-RapidAPI-Host': 'v3.football.api-sports.io'
     }
   };
 
@@ -163,7 +162,7 @@ export const getStadium = async (matchId) => {
       'X-RapidAPI-Host': API_HOST
     }
   };
-  
+
   try {
     const response = await fetch(url, options);
     const result = await response.json();
@@ -183,7 +182,7 @@ export const getButterflyStatistics = async (matchId) => {
       'X-RapidAPI-Host': API_HOST
     }
   };
-  
+
   try {
     const response = await fetch(url, options);
     const result = await response.json();
